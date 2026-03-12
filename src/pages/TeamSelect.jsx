@@ -1,6 +1,6 @@
 import { TEAMS } from "../lib/gameConfig";
 
-export default function TeamSelect({ onSelect }) {
+export default function TeamSelect({ onSelect, onAdmin }) {
   return (
     <div className="page team-select-page">
       <div className="select-header">
@@ -12,6 +12,7 @@ export default function TeamSelect({ onSelect }) {
           Misión activa
         </div>
       </div>
+
       <div className="select-body">
         <div className="select-label">Seleccioná tu equipo</div>
         <div className="teams-grid">
@@ -30,6 +31,9 @@ export default function TeamSelect({ onSelect }) {
         <p className="footer-hint">
           Todos los jugadores del mismo equipo deben seleccionar el mismo color
         </p>
+        <button className="admin-access-btn" onClick={onAdmin}>
+          ⚙️ Panel Admin
+        </button>
       </div>
     </div>
   );

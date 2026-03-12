@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import TeamSelect from "./pages/TeamSelect";
 import GameBoard from "./pages/GameBoard";
 import Ranking from "./pages/Ranking";
+import Admin from "./pages/Admin";
 import { initializeGame } from "./hooks/useGame";
 import "./App.css";
 
@@ -26,7 +27,10 @@ export default function App() {
   return (
     <div className="app-root">
       {view === "select" && (
-        <TeamSelect onSelect={(team) => { setSelectedTeam(team); setView("game"); }} />
+        <TeamSelect
+          onSelect={(team) => { setSelectedTeam(team); setView("game"); }}
+          onAdmin={() => setView("admin")}
+        />
       )}
       {view === "game" && selectedTeam && (
         <GameBoard
@@ -40,6 +44,9 @@ export default function App() {
           onBack={() => setView(selectedTeam ? "game" : "select")}
           currentTeamId={selectedTeam?.id}
         />
+      )}
+      {view === "admin" && (
+        <Admin onBack={() => setView("select")} />
       )}
     </div>
   );
