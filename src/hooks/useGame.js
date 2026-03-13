@@ -1,10 +1,8 @@
-// src/hooks/useGame.js
 import { useState, useEffect } from "react";
 import { doc, getDoc, setDoc, updateDoc, onSnapshot } from "firebase/firestore";
 import { db } from "../lib/firebase";
 import { TEAMS, TOTAL_BOMBS, CODE_POOL } from "../lib/gameConfig";
 
-// Shuffle array (Fisher-Yates)
 function shuffle(arr) {
   const a = [...arr];
   for (let i = a.length - 1; i > 0; i--) {
@@ -14,7 +12,6 @@ function shuffle(arr) {
   return a;
 }
 
-// Sortear códigos: 5 únicos por equipo
 function drawCodes() {
   const needed = TEAMS.length * TOTAL_BOMBS;
   const pool = shuffle(CODE_POOL).slice(0, needed);
@@ -25,7 +22,6 @@ function drawCodes() {
   return assigned;
 }
 
-// Inicializar juego (solo si no existe)
 export async function initializeGame() {
   const gameRef = doc(db, "game", "state");
   const snap = await getDoc(gameRef);
@@ -34,28 +30,37 @@ export async function initializeGame() {
   }
 }
 
-// Nueva partida: sortea códigos y resetea todo
 export async function startNewGame() {
   const assigned = drawCodes();
-
-  // Estado de equipos
   const teams = {};
   TEAMS.forEach((t) => {
-    teams[t.id] = { bombs: TOTAL_BOMBS, name: t.name, codes: assigned[t.id] };
+    const codesObj = {};
+    assigned[t.id].forEach((code, i) => { codesObj[`code${i}`] = code; });
+    teams[t.id] = { bombs: TOTAL_BOMBS, name: t.name, codes: codesObj };
   });
   await setDoc(doc(db, "game", "state"), { teams, startedAt: Date.now() });
-
-  // Códigos válidos (todos los sorteados, marcados como no usados)
   const codes = {};
-  Object.values(assigned).flat().forEach((c) => {
-    codes[c] = { used: false, usedBy: null };
+  TEAMS.forEach((t) => {
+    assigned[t.id].forEach((c) => {
+      codes[c] = { used: false, usedBy: null, assignedTo: t.id };
+    });
   });
   await setDoc(doc(db, "game", "codes"), codes);
-
   return assigned;
 }
 
-// Hook estado de equipos en tiempo real
+export async function getCurrentCodes() {
+  const gameSnap = await getDoc(doc(db, "game", "state"));
+  if (!gameSnap.exists()) return null;
+  const teams = gameSnap.data().teams;
+  const assigned = {};
+  TEAMS.forEach((t) => {
+    const codesObj = teams[t.id]?.codes || {};
+    assigned[t.id] = Object.values(codesObj);
+  });
+  return assigned;
+}
+
 export function useTeams() {
   const [teams, setTeams] = useState(null);
   useEffect(() => {
@@ -67,15 +72,16 @@ export function useTeams() {
   return teams;
 }
 
-// Desactivar bomba
 export async function deactivateBomb(teamId, code) {
   const upperCode = code.trim().toUpperCase();
-
   const codesRef = doc(db, "game", "codes");
   const codesSnap = await getDoc(codesRef);
   const codesData = codesSnap.exists() ? codesSnap.data() : {};
 
   if (!codesData[upperCode]) {
+    return { success: false, message: "❌ Código incorrecto" };
+  }
+  if (codesData[upperCode].assignedTo !== teamId) {
     return { success: false, message: "❌ Código incorrecto" };
   }
   if (codesData[upperCode].used) {
@@ -84,8 +90,7 @@ export async function deactivateBomb(teamId, code) {
 
   const gameRef = doc(db, "game", "state");
   const gameSnap = await getDoc(gameRef);
-  const gameData = gameSnap.data();
-  const currentBombs = gameData.teams[teamId].bombs;
+  const currentBombs = gameSnap.data().teams[teamId].bombs;
 
   if (currentBombs <= 0) {
     return { success: false, message: "✅ ¡Ya desactivaron todas sus bombas!" };

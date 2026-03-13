@@ -12,6 +12,3 @@ const firebaseConfig = {
 
 const app = initializeApp(firebaseConfig);
 export const db = getFirestore(app);
-
-// 🔥 Base de datos Firestore
-export const db = getFirestore(app);
