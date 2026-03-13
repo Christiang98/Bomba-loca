@@ -1,3 +1,4 @@
+// src/hooks/useGame.js
 import { useState, useEffect } from "react";
 import { doc, getDoc, setDoc, updateDoc, onSnapshot } from "firebase/firestore";
 import { db } from "../lib/firebase";
@@ -34,29 +35,26 @@ export async function startNewGame() {
   const assigned = drawCodes();
   const teams = {};
   TEAMS.forEach((t) => {
-    const codesObj = {};
-    assigned[t.id].forEach((code, i) => { codesObj[`code${i}`] = code; });
-    teams[t.id] = { bombs: TOTAL_BOMBS, name: t.name, codes: codesObj };
+    teams[t.id] = { bombs: TOTAL_BOMBS, name: t.name, codes: assigned[t.id] };
   });
   await setDoc(doc(db, "game", "state"), { teams, startedAt: Date.now() });
+
   const codes = {};
-  TEAMS.forEach((t) => {
-    assigned[t.id].forEach((c) => {
-      codes[c] = { used: false, usedBy: null, assignedTo: t.id };
-    });
+  Object.values(assigned).flat().forEach((c) => {
+    codes[c] = { used: false, usedBy: null };
   });
   await setDoc(doc(db, "game", "codes"), codes);
   return assigned;
 }
 
+// Obtener códigos de la partida actual desde Firebase
 export async function getCurrentCodes() {
   const gameSnap = await getDoc(doc(db, "game", "state"));
   if (!gameSnap.exists()) return null;
   const teams = gameSnap.data().teams;
   const assigned = {};
   TEAMS.forEach((t) => {
-    const codesObj = teams[t.id]?.codes || {};
-    assigned[t.id] = Object.values(codesObj);
+    assigned[t.id] = teams[t.id]?.codes || [];
   });
   return assigned;
 }
@@ -74,14 +72,12 @@ export function useTeams() {
 
 export async function deactivateBomb(teamId, code) {
   const upperCode = code.trim().toUpperCase();
+
   const codesRef = doc(db, "game", "codes");
   const codesSnap = await getDoc(codesRef);
   const codesData = codesSnap.exists() ? codesSnap.data() : {};
 
   if (!codesData[upperCode]) {
-    return { success: false, message: "❌ Código incorrecto" };
-  }
-  if (codesData[upperCode].assignedTo !== teamId) {
     return { success: false, message: "❌ Código incorrecto" };
   }
   if (codesData[upperCode].used) {
@@ -90,7 +86,8 @@ export async function deactivateBomb(teamId, code) {
 
   const gameRef = doc(db, "game", "state");
   const gameSnap = await getDoc(gameRef);
-  const currentBombs = gameSnap.data().teams[teamId].bombs;
+  const gameData = gameSnap.data();
+  const currentBombs = gameData.teams[teamId].bombs;
 
   if (currentBombs <= 0) {
     return { success: false, message: "✅ ¡Ya desactivaron todas sus bombas!" };

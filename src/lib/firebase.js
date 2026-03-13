@@ -1,3 +1,7 @@
+// src/lib/firebase.js
+// ⚠️ REEMPLAZÁ estos valores con los de tu proyecto Firebase
+// Ve a https://console.firebase.google.com → Tu proyecto → Configuración → Aplicaciones web
+
 import { initializeApp } from "firebase/app";
 import { getFirestore } from "firebase/firestore";
 
@@ -11,4 +15,4 @@ const firebaseConfig = {
 };
 
 const app = initializeApp(firebaseConfig);
-export const db = getFirestore(app);
+export const db = getFirestore(app)
