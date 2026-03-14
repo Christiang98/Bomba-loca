@@ -24,7 +24,8 @@ export const CODE_POOL = [
 "V7K1","Y3P6","B8T4","F1R9","K6Q2",
 "M3X5","P9T7","R2B8","T5K4","W1M7",
 "X8Q3","Z4P6","C7T9","G2M1","H5R8",
-"J9K6","N1Q7","S4P3","V6T2","Y8M5"
+"J9K6","N1Q7","S4P3","V6T2","Y8M5",
+"K7V2","A3L7","E8N2","U4D9"
 ];
 
 // PIN para acceder al panel de administrador
